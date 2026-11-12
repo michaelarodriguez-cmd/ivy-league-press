@@ -41,32 +41,37 @@
     ]
   };
 
-  const dialog = document.getElementById('storyDialog');
-  const closeDialog = document.getElementById('closeDialog');
-  const dialogTitle = document.getElementById('dialogTitle');
-  const dialogText = document.getElementById('dialogText');
+  // Homepage article pop-ups
+  // Event delegation allows buttons to work after smooth navigation.
+  document.addEventListener('click', event => {
+    const storyButton = event.target.closest('[data-story]');
 
-  if (dialog && closeDialog && dialogTitle && dialogText) {
-    document.querySelectorAll('[data-story]').forEach(button => {
-      button.addEventListener('click', () => {
-        const story = stories[button.dataset.story];
+    if (storyButton) {
+      const story = stories[storyButton.dataset.story];
+      const dialog = document.getElementById('storyDialog');
+      const dialogTitle = document.getElementById('dialogTitle');
+      const dialogText = document.getElementById('dialogText');
 
-        if (!story) return;
-
-        dialogTitle.textContent = story[0];
-        dialogText.textContent = story[1];
-        dialog.showModal();
-      });
-    });
-
-    closeDialog.addEventListener('click', () => {
-      dialog.close();
-    });
-
-    dialog.addEventListener('click', event => {
-      if (event.target === dialog) {
-        dialog.close();
+      if (!story || !dialog || !dialogTitle || !dialogText) {
+        return;
       }
-    });
-  }
+
+      dialogTitle.textContent = story[0];
+      dialogText.textContent = story[1];
+
+      dialog.showModal();
+      return;
+    }
+
+    // Close the demonstration article dialog
+    if (event.target.closest('#closeDialog')) {
+      document.getElementById('storyDialog')?.close();
+      return;
+    }
+
+    // Close dialog when clicking its backdrop
+    if (event.target.id === 'storyDialog') {
+      event.target.close();
+    }
+  });
 })();

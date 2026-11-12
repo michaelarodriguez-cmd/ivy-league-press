@@ -1,0 +1,74 @@
+[
+  {
+    "slug": "following-the-money",
+    "title": "Following the Money: A Guide to Government Contract Oversight",
+    "category": "Investigations",
+    "excerpt": "A demonstration of how journalists might examine public contracts, spending records and oversight reports.",
+    "date": "2026-11-11",
+    "author": "ILP Editorial Demo",
+    "body": [
+      "This is fictional demonstration content for website testing, not real reporting.",
+      "A published article would require independent verification, appropriate sourcing, context and a fair opportunity for response."
+    ]
+  },
+  {
+    "slug": "tracking-legislation",
+    "title": "From Proposal to Law: Tracking Policy Decisions",
+    "category": "Politics",
+    "excerpt": "A sample explainer on how bills move through Congress and how the public can follow changes.",
+    "date": "2026-11-11",
+    "author": "ILP Editorial Demo",
+    "body": [
+      "This is fictional demonstration content for website testing, not real reporting.",
+      "A published article would require independent verification, appropriate sourcing, context and a fair opportunity for response."
+    ]
+  },
+  {
+    "slug": "public-records",
+    "title": "Inside the Public Records Process",
+    "category": "Government",
+    "excerpt": "A fictional editorial example exploring public-records requests and government transparency.",
+    "date": "2026-11-11",
+    "author": "ILP Editorial Demo",
+    "body": [
+      "This is fictional demonstration content for website testing, not real reporting.",
+      "A published article would require independent verification, appropriate sourcing, context and a fair opportunity for response."
+    ]
+  },
+  {
+    "slug": "oversight-questions",
+    "title": "Questions Journalists Ask About Federal Oversight",
+    "category": "Investigations",
+    "excerpt": "An illustrative reporting checklist covering audits, agency responses and public accountability.",
+    "date": "2026-11-11",
+    "author": "ILP Editorial Demo",
+    "body": [
+      "This is fictional demonstration content for website testing, not real reporting.",
+      "A published article would require independent verification, appropriate sourcing, context and a fair opportunity for response."
+    ]
+  },
+  {
+    "slug": "policy-analysis",
+    "title": "How to Read a Federal Policy Proposal",
+    "category": "Politics",
+    "excerpt": "A sample guide to evaluating policy language, costs and possible impacts.",
+    "date": "2026-11-11",
+    "author": "ILP Editorial Demo",
+    "body": [
+      "This is fictional demonstration content for website testing, not real reporting.",
+      "A published article would require independent verification, appropriate sourcing, context and a fair opportunity for response."
+    ]
+  },
+  {
+    "slug": "accountability-reporting",
+    "title": "The Basics of Accountability Reporting",
+    "category": "Government",
+    "excerpt": "An introduction to public documents, interviews, verification and corrections.",
+    "date": "2026-11-11",
+    "author": "ILP Editorial Demo",
+    "body": [
+      "This is fictional demonstration content for website testing, not real reporting.",
+      "A published article would require independent verification, appropriate sourcing, context and a fair opportunity for response."
+    ]
+  }
+]

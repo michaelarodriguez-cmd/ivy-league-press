@@ -236,13 +236,7 @@
   }
 
   // Smooth navigation between categories and Search.
-  document.addEventListener('click', event => {
-    if (event.defaultPrevented ||
-        event.button !== 0 ||
-        event.metaKey ||
-        event.ctrlKey ||
-        event.shiftKey ||
-        event.altKey) return;
+ 
 
     const link = event.target.closest('a[href]');
     if (!link) return;
@@ -274,13 +268,7 @@
   });
 
   // Support the browser Back and Forward buttons.
-  window.addEventListener('popstate', () => {
-    if (getPageType()) {
-      renderPage();
-    } else {
-      location.reload();
-    }
-  });
+  
 
   // Search input updates without reloading.
   document.addEventListener('input', event => {
@@ -364,4 +352,11 @@
 
   // Initialize the current page.
   renderPage();
+document.addEventListener('ilp:pagechange', () => {
+  renderPage();
+
+  if ($('#article-content') && articlesLoaded) {
+    renderArticle();
+  }
+});
 })();

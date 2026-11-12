@@ -1,8 +1,8 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 // Replace these two placeholders with your own Supabase values.
-const SUPABASE_URL = 'PASTE_YOUR_PROJECT_URL_HERE';
-const SUPABASE_PUBLISHABLE_KEY = 'PASTE_YOUR_PUBLISHABLE_KEY_HERE';
+const SUPABASE_URL = 'https://kdbmbgygqxaareaiavuj.supabase.co/rest/v1/';
+const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_udopPnk7YpqGTqrSMfQ2_Q_DDWoAYoe';
 
 const $ = id => document.getElementById(id);
 const isLogin = Boolean($('login-form'));

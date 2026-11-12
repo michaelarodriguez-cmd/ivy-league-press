@@ -1,66 +1,74 @@
 
 (() => {
-  const $ = s => document.querySelector(s);
+  const $ = selector => document.querySelector(selector);
 
-  const esc = s => String(s ?? '').replace(
-    /[&<>"']/g,
-    c => ({
+  const categories = [
+    'Investigations',
+    'Politics',
+    'Government'
+  ];
+
+  let articles = [];
+  let articlesLoaded = false;
+
+  const escapeHTML = value =>
+    String(value ?? '').replace(/[&<>"']/g, char => ({
       '&': '&amp;',
       '<': '&lt;',
       '>': '&gt;',
       '"': '&quot;',
       "'": '&#39;'
-    }[c])
-  );
+    }[char]));
 
-  const categories = ['Investigations', 'Politics', 'Government'];
-  let articles = [];
+  function getPageType(path = location.pathname) {
+    if (path.endsWith('/section.html')) return 'section';
+    if (path.endsWith('/search.html')) return 'search';
+    return null;
+  }
 
-  const card = a => `
-    <div class="article-tile">
-      <small>${esc(a.category)} · DEMONSTRATION</small>
-      <h2>
-        <a href="article.html?slug=${encodeURIComponent(a.slug)}">
-          ${esc(a.title)}
+  function articleCard(article) {
+    return `
+      <div class="article-tile">
+        <small>
+          ${escapeHTML(article.category)} · DEMONSTRATION
+        </small>
+
+        <h2>
+          <a href="article.html?slug=${encodeURIComponent(article.slug)}">
+            ${escapeHTML(article.title)}
+          </a>
+        </h2>
+
+        <p>${escapeHTML(article.excerpt)}</p>
+
+        <a href="article.html?slug=${encodeURIComponent(article.slug)}">
+          READ SAMPLE →
         </a>
-      </h2>
-      <p>${esc(a.excerpt)}</p>
-      <a href="article.html?slug=${encodeURIComponent(a.slug)}">
-        READ SAMPLE →
-      </a>
-    </div>
-  `;
+      </div>
+    `;
+  }
 
-  function renderSection() {
-    const results = $('#section-results');
-    if (!results) return;
+  function getCategory() {
+    return new URLSearchParams(location.search).get('category');
+  }
 
-    const params = new URLSearchParams(location.search);
-    const category = params.get('category');
-    const heading = categories.includes(category)
-      ? category
-      : 'All Coverage';
+  function updateNavigation() {
+    const currentPage = getPageType();
+    const category = getCategory();
 
-    const title = $('#section-title');
-    if (title) title.textContent = heading;
-
-    document.title = heading + ' | Ivy League Press';
-
-    const filtered = articles.filter(a =>
-      !categories.includes(category) || a.category === category
-    );
-
-    results.innerHTML = filtered.map(card).join('') ||
-      '<p>No demonstration articles in this section yet.</p>';
-
-    // Highlight the selected navigation link.
     document.querySelectorAll('nav a').forEach(link => {
       const url = new URL(link.href, location.href);
+      const linkPage = getPageType(url.pathname);
+
       const active =
-        url.pathname.endsWith('/section.html') &&
-        url.searchParams.get('category') === category;
+        currentPage === 'search'
+          ? linkPage === 'search'
+          : currentPage === 'section' &&
+            linkPage === 'section' &&
+            url.searchParams.get('category') === category;
 
       link.classList.toggle('active', active);
+
       if (active) {
         link.setAttribute('aria-current', 'page');
       } else {
@@ -69,122 +77,291 @@
     });
   }
 
-  // Switch categories without reloading the whole page.
+  function renderSection() {
+    const title = $('#section-title');
+    const results = $('#section-results');
+
+    if (!title || !results) return;
+
+    const category = getCategory();
+
+    const heading = categories.includes(category)
+      ? category
+      : 'All Coverage';
+
+    title.textContent = heading;
+    document.title = heading + ' | Ivy League Press';
+
+    if (!articlesLoaded) {
+      results.innerHTML = '<p>Loading articles...</p>';
+      return;
+    }
+
+    const filtered = articles.filter(article =>
+      !categories.includes(category) ||
+      article.category === category
+    );
+
+    results.innerHTML = filtered.length
+      ? filtered.map(articleCard).join('')
+      : '<p>No demonstration articles in this section yet.</p>';
+  }
+
+  function renderSearch() {
+    const input = $('#query');
+    const results = $('#search-results');
+
+    if (!input || !results) return;
+
+    if (!articlesLoaded) {
+      results.innerHTML = '<p>Loading articles...</p>';
+      return;
+    }
+
+    const term = input.value.trim().toLowerCase();
+
+    const filtered = articles.filter(article =>
+      [
+        article.title,
+        article.category,
+        article.excerpt
+      ].join(' ').toLowerCase().includes(term)
+    );
+
+    results.innerHTML = filtered.length
+      ? filtered.map(articleCard).join('')
+      : '<p>No matching stories.</p>';
+  }
+
+  function renderArticle() {
+    const container = $('#article-content');
+    if (!container) return;
+
+    const slug = new URLSearchParams(location.search).get('slug');
+    const article = articles.find(item => item.slug === slug);
+
+    if (!article) {
+      container.innerHTML = '<h1>Article not found</h1>';
+      return;
+    }
+
+    container.innerHTML = `
+      <div class="story-flag">
+        ${escapeHTML(article.category)}
+        · DEMONSTRATION · NOT REAL NEWS
+      </div>
+
+      <h1>${escapeHTML(article.title)}</h1>
+
+      <p class="lead">${escapeHTML(article.excerpt)}</p>
+
+      <p class="story-meta">
+        ${escapeHTML(article.author)}
+        · ${escapeHTML(article.date)}
+      </p>
+
+      <div class="alert">
+        This article is a fictional demonstration for
+        layout testing, not an actual investigation.
+      </div>
+
+      <div class="story-body">
+        ${(article.body || []).map(paragraph =>
+          `<p>${escapeHTML(paragraph)}</p>`
+        ).join('')}
+      </div>
+
+      <p><a href="index.html">← Back to homepage</a></p>
+    `;
+  }
+
+  function sectionMarkup() {
+    return `
+      <div class="label">IVY LEAGUE PRESS | NEWS</div>
+      <h1 id="section-title"></h1>
+      <p class="lead">Browse demonstration stories by topic.</p>
+
+      <div class="alert">
+        All stories are fictional demonstrations,
+        not published news.
+      </div>
+
+      <div class="article-grid" id="section-results"></div>
+    `;
+  }
+
+  function searchMarkup() {
+    return `
+      <h1>Search the newsroom</h1>
+
+      <p class="lead">
+        Search launch-preview demonstration articles.
+      </p>
+
+      <input
+        id="query"
+        type="search"
+        placeholder="Search headlines, topics and summaries"
+        aria-label="Search articles"
+      >
+
+      <div class="article-grid" id="search-results"></div>
+    `;
+  }
+
+  function renderPage() {
+    const page = getPageType();
+    const main = $('main');
+
+    if (!main || !page) return;
+
+    main.classList.add('interior');
+
+    if (page === 'section') {
+      if (!$('#section-results')) {
+        main.innerHTML = sectionMarkup();
+      }
+      renderSection();
+    }
+
+    if (page === 'search') {
+      if (!$('#search-results')) {
+        main.innerHTML = searchMarkup();
+      }
+      document.title = 'Search | Ivy League Press';
+      renderSearch();
+    }
+
+    updateNavigation();
+  }
+
+  // Smooth navigation between categories and Search.
   document.addEventListener('click', event => {
-    const link = event.target.closest('a');
-    if (!link || !$('#section-results')) return;
+    if (event.defaultPrevented ||
+        event.button !== 0 ||
+        event.metaKey ||
+        event.ctrlKey ||
+        event.shiftKey ||
+        event.altKey) return;
+
+    const link = event.target.closest('a[href]');
+    if (!link) return;
+
+    if (link.hasAttribute('download') ||
+        (link.target && link.target !== '_self')) return;
 
     const url = new URL(link.href, location.href);
+    const destination = getPageType(url.pathname);
+    const current = getPageType();
 
-    if (
-      url.origin !== location.origin ||
-      !url.pathname.endsWith('/section.html')
-    ) return;
+    if (!destination || !current ||
+        url.origin !== location.origin) return;
 
     event.preventDefault();
-    history.pushState({}, '', url.pathname + url.search);
-    renderSection();
+
+    const nextURL = url.pathname + url.search;
+
+    if (nextURL !== location.pathname + location.search) {
+      history.pushState({}, '', nextURL);
+    }
+
+    renderPage();
+    window.scrollTo(0, 0);
+
+    if (destination === 'search') {
+      $('#query')?.focus({ preventScroll: true });
+    }
   });
 
+  // Support the browser Back and Forward buttons.
   window.addEventListener('popstate', () => {
-    if ($('#section-results')) renderSection();
+    if (getPageType()) {
+      renderPage();
+    } else {
+      location.reload();
+    }
   });
 
+  // Search input updates without reloading.
+  document.addEventListener('input', event => {
+    if (event.target.id === 'query') {
+      renderSearch();
+    }
+  });
+
+  // Load demonstration articles once.
   fetch('articles.json')
     .then(response => {
-      if (!response.ok) throw new Error('Article data unavailable');
+      if (!response.ok) {
+        throw new Error('Unable to load articles');
+      }
       return response.json();
     })
     .then(data => {
+      if (!Array.isArray(data)) {
+        throw new Error('Invalid article data');
+      }
+
       articles = data;
+      articlesLoaded = true;
 
-      if ($('#section-results')) renderSection();
-
-      if ($('#article-content')) {
-        const slug = new URLSearchParams(location.search).get('slug');
-        const a = articles.find(x => x.slug === slug);
-
-        $('#article-content').innerHTML = a
-          ? `
-            <div class="story-flag">
-              ${esc(a.category)} · DEMONSTRATION · NOT REAL NEWS
-            </div>
-            <h1>${esc(a.title)}</h1>
-            <p class="lead">${esc(a.excerpt)}</p>
-            <p class="story-meta">${esc(a.author)} · ${esc(a.date)}</p>
-            <div class="alert">
-              This article is a fictional demonstration for layout
-              testing, not an actual investigation.
-            </div>
-            <div class="story-body">
-              ${(a.body || []).map(x => `<p>${esc(x)}</p>`).join('')}
-            </div>
-            <p><a href="index.html">← Back to homepage</a></p>
-          `
-          : '<h1>Article not found</h1>';
-      }
-
-      if ($('#query')) {
-        const update = () => {
-          const q = $('#query').value.toLowerCase();
-
-          $('#search-results').innerHTML =
-            articles.filter(a =>
-              [a.title, a.category, a.excerpt]
-                .join(' ')
-                .toLowerCase()
-                .includes(q)
-            ).map(card).join('') || '<p>No matching stories.</p>';
-        };
-
-        $('#query').addEventListener('input', update);
-        update();
-      }
+      if (getPageType()) renderPage();
+      if ($('#article-content')) renderArticle();
     })
-    .catch(() => {
+    .catch(error => {
+      console.error(error);
+
       for (const id of [
         '#section-results',
-        '#article-content',
-        '#search-results'
+        '#search-results',
+        '#article-content'
       ]) {
-        if ($(id)) {
-          $(id).innerHTML = '<p>Unable to load articles.json.</p>';
+        const element = $(id);
+        if (element) {
+          element.innerHTML =
+            '<p>Unable to load articles.json.</p>';
         }
       }
     });
 
-  // Preserve the existing article draft export feature.
+  // Preserve article draft exporting.
   $('#draft-form')?.addEventListener('submit', event => {
     event.preventDefault();
 
-    const f = new FormData(event.target);
-    const title = String(f.get('title')).trim();
+    const form = new FormData(event.target);
+    const title = String(form.get('title') ?? '').trim();
 
-    const a = {
+    if (!title) return;
+
+    const article = {
       slug: title.toLowerCase()
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/^-|-$/g, ''),
       title,
-      category: f.get('category'),
-      excerpt: f.get('excerpt'),
+      category: form.get('category'),
+      excerpt: form.get('excerpt'),
       date: new Date().toISOString().slice(0, 10),
-      author: f.get('author'),
-      body: String(f.get('body'))
+      author: form.get('author'),
+      body: String(form.get('body') ?? '')
         .split(/\n\s*\n/)
         .filter(Boolean)
     };
 
-    const u = URL.createObjectURL(
-      new Blob([JSON.stringify(a, null, 2)], {
-        type: 'application/json'
-      })
+    const blob = new Blob(
+      [JSON.stringify(article, null, 2)],
+      { type: 'application/json' }
     );
 
-    const link = document.createElement('a');
-    link.href = u;
-    link.download = a.slug + '.json';
-    link.click();
+    const url = URL.createObjectURL(blob);
+    const download = document.createElement('a');
 
-    setTimeout(() => URL.revokeObjectURL(u), 1000);
+    download.href = url;
+    download.download = article.slug + '.json';
+    download.click();
+
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   });
+
+  // Initialize the current page.
+  renderPage();
 })();

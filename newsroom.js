@@ -1,7 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 // Replace these two placeholders with your own Supabase values.
-const SUPABASE_URL = 'https://kdbmbgygqxaareaiavuj.supabase.co/rest/v1/';
+const SUPABASE_URL = 'https://kdbmbgygqxaareaiavuj.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_udopPnk7YpqGTqrSMfQ2_Q_DDWoAYoe';
 
 const $ = id => document.getElementById(id);
@@ -13,7 +13,17 @@ if (SUPABASE_URL.includes('PASTE_') || SUPABASE_PUBLISHABLE_KEY.includes('PASTE_
   message('Configure your Supabase URL and publishable key in newsroom.js first.');
   if ($('loading')) $('loading').textContent = 'Supabase configuration required.';
 } else {
-  const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+  const supabase = createClient(
+  SUPABASE_URL,
+  SUPABASE_PUBLISHABLE_KEY,
+  {
+    auth: {
+      storageKey: 'ivy-league-press-auth',
+      persistSession: true,
+      autoRefreshToken: true
+    }
+  }
+);
   const loginURL = 'newsroom-login.html';
   const dashboardURL = 'newsroom-dashboard.html';
   const { data: { session } } = await supabase.auth.getSession();

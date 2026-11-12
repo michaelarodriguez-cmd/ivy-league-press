@@ -238,34 +238,7 @@
   // Smooth navigation between categories and Search.
  
 
-    const link = event.target.closest('a[href]');
-    if (!link) return;
-
-    if (link.hasAttribute('download') ||
-        (link.target && link.target !== '_self')) return;
-
-    const url = new URL(link.href, location.href);
-    const destination = getPageType(url.pathname);
-    const current = getPageType();
-
-    if (!destination || !current ||
-        url.origin !== location.origin) return;
-
-    event.preventDefault();
-
-    const nextURL = url.pathname + url.search;
-
-    if (nextURL !== location.pathname + location.search) {
-      history.pushState({}, '', nextURL);
-    }
-
-    renderPage();
-    window.scrollTo(0, 0);
-
-    if (destination === 'search') {
-      $('#query')?.focus({ preventScroll: true });
-    }
-  });
+  
 
   // Support the browser Back and Forward buttons.
   
@@ -352,11 +325,12 @@
 
   // Initialize the current page.
   renderPage();
-document.addEventListener('ilp:pagechange', () => {
-  renderPage();
 
-  if ($('#article-content') && articlesLoaded) {
-    renderArticle();
-  }
-});
+  document.addEventListener('ilp:pagechange', () => {
+    renderPage();
+
+    if ($('#article-content') && articlesLoaded) {
+      renderArticle();
+    }
+  });
 })();

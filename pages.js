@@ -2,14 +2,14 @@
 (() => {
   const $ = selector => document.querySelector(selector);
 
-  const categories = [
-    'Investigations',
-    'Politics',
-    'Government'
-  ];
+  const SUPABASE_URL = 'https://kdbmbgygqxaareaiavuj.supabase.co';
+  const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_udopPnk7YpqGTqrSMfQ2_Q_DDWoAYoe';
+
+  const categories = ['Investigations', 'Politics', 'Government'];
 
   let articles = [];
   let articlesLoaded = false;
+  let loadError = false;
 
   const escapeHTML = value =>
     String(value ?? '').replace(/[&<>"']/g, char => ({
@@ -23,14 +23,22 @@
   function getPageType(path = location.pathname) {
     if (path.endsWith('/section.html')) return 'section';
     if (path.endsWith('/search.html')) return 'search';
+    if (path.endsWith('/article.html')) return 'article';
     return null;
   }
 
+  function getCategory() {
+    return new URLSearchParams(location.search).get('category');
+  }
+
   function articleCard(article) {
+    const demo = article.isDemo;
+
     return `
       <div class="article-tile">
         <small>
-          ${escapeHTML(article.category)} · DEMONSTRATION
+          ${escapeHTML(article.category)}
+          ${demo ? ' · DEMONSTRATION' : ' · PUBLISHED NEWS'}
         </small>
 
         <h2>
@@ -39,17 +47,13 @@
           </a>
         </h2>
 
-        <p>${escapeHTML(article.excerpt)}</p>
+        <p>${escapeHTML(article.excerpt || '')}</p>
 
         <a href="article.html?slug=${encodeURIComponent(article.slug)}">
-          READ SAMPLE →
+          ${demo ? 'READ SAMPLE' : 'READ ARTICLE'} →
         </a>
       </div>
     `;
-  }
-
-  function getCategory() {
-    return new URLSearchParams(location.search).get('category');
   }
 
   function updateNavigation() {
@@ -77,14 +81,42 @@
     });
   }
 
+  function sectionMarkup() {
+    return `
+      <div class="label">IVY LEAGUE PRESS | NEWS</div>
+      <h1 id="section-title"></h1>
+      <p class="lead">
+        Browse published reporting and clearly labeled
+        demonstration articles by topic.
+      </p>
+      <div class="article-grid" id="section-results"></div>
+    `;
+  }
+
+  function searchMarkup() {
+    return `
+      <h1>Search the newsroom</h1>
+      <p class="lead">
+        Search published reporting and demonstration articles.
+      </p>
+
+      <input
+        id="query"
+        type="search"
+        placeholder="Search headlines, topics and summaries"
+        aria-label="Search articles"
+      >
+
+      <div class="article-grid" id="search-results"></div>
+    `;
+  }
+
   function renderSection() {
     const title = $('#section-title');
     const results = $('#section-results');
-
     if (!title || !results) return;
 
     const category = getCategory();
-
     const heading = categories.includes(category)
       ? category
       : 'All Coverage';
@@ -104,13 +136,12 @@
 
     results.innerHTML = filtered.length
       ? filtered.map(articleCard).join('')
-      : '<p>No demonstration articles in this section yet.</p>';
+      : '<p>No stories in this section yet.</p>';
   }
 
   function renderSearch() {
     const input = $('#query');
     const results = $('#search-results');
-
     if (!input || !results) return;
 
     if (!articlesLoaded) {
@@ -137,37 +168,66 @@
     const container = $('#article-content');
     if (!container) return;
 
+    if (!articlesLoaded) {
+      container.innerHTML = '<p>Loading article...</p>';
+      return;
+    }
+
     const slug = new URLSearchParams(location.search).get('slug');
     const article = articles.find(item => item.slug === slug);
 
     if (!article) {
       container.innerHTML = '<h1>Article not found</h1>';
+      document.title = 'Article not found | Ivy League Press';
       return;
     }
+
+    document.title = article.title + ' | Ivy League Press';
+
+    const demo = article.isDemo;
+
+    const paragraphs = Array.isArray(article.body)
+      ? article.body
+      : String(article.body || '')
+          .split(/\n\s*\n/)
+          .filter(Boolean);
+
+    const date = article.date
+      ? new Date(article.date).toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+          timeZone: 'UTC'
+        })
+      : '';
 
     container.innerHTML = `
       <div class="story-flag">
         ${escapeHTML(article.category)}
-        · DEMONSTRATION · NOT REAL NEWS
+        · ${demo
+          ? 'DEMONSTRATION · NOT REAL NEWS'
+          : 'PUBLISHED REPORTING'}
       </div>
 
       <h1>${escapeHTML(article.title)}</h1>
 
-      <p class="lead">${escapeHTML(article.excerpt)}</p>
+      <p class="lead">${escapeHTML(article.excerpt || '')}</p>
 
       <p class="story-meta">
-        ${escapeHTML(article.author)}
-        · ${escapeHTML(article.date)}
+        ${escapeHTML(article.author || 'Ivy League Press')}
+        ${date ? ' · ' + escapeHTML(date) : ''}
       </p>
 
-      <div class="alert">
-        This article is a fictional demonstration for
-        layout testing, not an actual investigation.
-      </div>
+      ${demo ? `
+        <div class="alert">
+          This article is a fictional demonstration for
+          layout testing, not an actual investigation.
+        </div>
+      ` : ''}
 
       <div class="story-body">
-        ${(article.body || []).map(paragraph =>
-          `<p>${escapeHTML(paragraph)}</p>`
+        ${paragraphs.map(paragraph =>
+          `<p>${escapeHTML(paragraph).replace(/\n/g, '<br>')}</p>`
         ).join('')}
       </div>
 
@@ -175,45 +235,14 @@
     `;
   }
 
-  function sectionMarkup() {
-    return `
-      <div class="label">IVY LEAGUE PRESS | NEWS</div>
-      <h1 id="section-title"></h1>
-      <p class="lead">Browse demonstration stories by topic.</p>
-
-      <div class="alert">
-        All stories are fictional demonstrations,
-        not published news.
-      </div>
-
-      <div class="article-grid" id="section-results"></div>
-    `;
-  }
-
-  function searchMarkup() {
-    return `
-      <h1>Search the newsroom</h1>
-
-      <p class="lead">
-        Search launch-preview demonstration articles.
-      </p>
-
-      <input
-        id="query"
-        type="search"
-        placeholder="Search headlines, topics and summaries"
-        aria-label="Search articles"
-      >
-
-      <div class="article-grid" id="search-results"></div>
-    `;
-  }
-
   function renderPage() {
     const page = getPageType();
     const main = $('main');
 
-    if (!main || !page) return;
+    if (!main || !page) {
+      updateNavigation();
+      return;
+    }
 
     main.classList.add('interior');
 
@@ -232,66 +261,28 @@
       renderSearch();
     }
 
+    if (page === 'article') {
+      renderArticle();
+    }
+
     updateNavigation();
   }
 
-  // Smooth navigation between categories and Search.
- 
-
-  
-
-  // Support the browser Back and Forward buttons.
-  
-
-  // Search input updates without reloading.
+  // Preserve live search without reloading the page.
   document.addEventListener('input', event => {
     if (event.target.id === 'query') {
       renderSearch();
     }
   });
 
-  // Load demonstration articles once.
-  fetch('articles.json')
-    .then(response => {
-      if (!response.ok) {
-        throw new Error('Unable to load articles');
-      }
-      return response.json();
-    })
-    .then(data => {
-      if (!Array.isArray(data)) {
-        throw new Error('Invalid article data');
-      }
+  // Preserve the existing article draft export feature.
+  document.addEventListener('submit', event => {
+    if (event.target.id !== 'draft-form') return;
 
-      articles = data;
-      articlesLoaded = true;
-
-      if (getPageType()) renderPage();
-      if ($('#article-content')) renderArticle();
-    })
-    .catch(error => {
-      console.error(error);
-
-      for (const id of [
-        '#section-results',
-        '#search-results',
-        '#article-content'
-      ]) {
-        const element = $(id);
-        if (element) {
-          element.innerHTML =
-            '<p>Unable to load articles.json.</p>';
-        }
-      }
-    });
-
-  // Preserve article draft exporting.
-  $('#draft-form')?.addEventListener('submit', event => {
     event.preventDefault();
 
     const form = new FormData(event.target);
     const title = String(form.get('title') ?? '').trim();
-
     if (!title) return;
 
     const article = {
@@ -323,14 +314,83 @@
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   });
 
-  // Initialize the current page.
-  renderPage();
+  async function loadArticles() {
+    let demoArticles = [];
+    let publishedArticles = [];
 
-  document.addEventListener('ilp:pagechange', () => {
+    try {
+      const response = await fetch('articles.json');
+      if (!response.ok) throw new Error('Unable to load articles.json');
+
+      const data = await response.json();
+
+      if (Array.isArray(data)) {
+        demoArticles = data.map(article => ({
+          ...article,
+          isDemo: true
+        }));
+      }
+    } catch (error) {
+      console.error('Demonstration articles:', error);
+    }
+
+    try {
+      const { createClient } = await import(
+        'https://esm.sh/@supabase/supabase-js@2'
+      );
+
+      const supabase = createClient(
+        SUPABASE_URL,
+        SUPABASE_PUBLISHABLE_KEY
+      );
+
+      const { data, error } = await supabase
+        .from('articles')
+        .select(
+          'title,slug,category,excerpt,body,author,published_at'
+        )
+        .eq('status', 'published')
+        .order('published_at', { ascending: false });
+
+      if (error) throw error;
+
+      publishedArticles = (data || []).map(article => ({
+        ...article,
+        date: article.published_at,
+        isDemo: false
+      }));
+    } catch (error) {
+      console.error('Published articles:', error);
+      loadError = true;
+    }
+
+    // Published stories take priority if slugs overlap.
+    const publishedSlugs = new Set(
+      publishedArticles.map(article => article.slug)
+    );
+
+    articles = [
+      ...publishedArticles,
+      ...demoArticles.filter(
+        article => !publishedSlugs.has(article.slug)
+      )
+    ];
+
+    articlesLoaded = true;
     renderPage();
 
-    if ($('#article-content') && articlesLoaded) {
-      renderArticle();
+    if (loadError) {
+      console.warn(
+        'Some published articles may be unavailable.'
+      );
     }
+  }
+
+  // Keep the existing flicker-free navigation.
+  document.addEventListener('ilp:pagechange', () => {
+    renderPage();
   });
+
+  renderPage();
+  loadArticles();
 })();

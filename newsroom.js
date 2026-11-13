@@ -260,109 +260,50 @@ if (SUPABASE_URL.includes('PASTE_') || SUPABASE_PUBLISHABLE_KEY.includes('PASTE_
 
             const draftButton = document.createElement('button');
             draftButton.type = 'button';
-            draftButton.textContent = 'Generate AI Draft';
+            draftButton.textContent = 'Write with ChatGPT';
 
-            draftButton.addEventListener('click', async () => {
-              const confirmed = confirm(
-                `Generate a preliminary AI draft for:\n\n` +
-                `${story.headline}\n\n` +
-                `This uses the OpenAI API and may incur charges. ` +
-                `The draft will require fact-checking before approval.`
-              );
+            
+draftButton.addEventListener('click', async () => {
+  const prompt = [
+    'You are assisting the editorial team at Ivy League Press.',
+    '',
+    'Research the following news story and write an original,',
+    'fact-based news article for editorial review.',
+    '',
+    `Headline: ${story.headline}`,
+    `Publisher: ${story.source_name}`,
+    `Original source: ${story.source_url}`,
+    '',
+    'Instructions:',
+    '- Research the original source and verify important claims.',
+    '- Use additional credible sources where appropriate.',
+    '- Do not invent facts, quotes, or statistics.',
+    '- Clearly identify anything that cannot be verified.',
+    '- Write an objective, professional news article.',
+    '- Include a headline, short summary, article body,',
+    '  and links to the sources used.',
+    '- Do not publish anything.',
+    '',
+    'This is a draft requiring human editorial approval.'
+  ].join('\n');
 
-              if (!confirmed) return;
+  const chatGPTWindow = window.open(
+    'https://chatgpt.com/',
+    '_blank',
+    'noopener,noreferrer'
+  );
 
-              draftButton.disabled = true;
-              draftButton.textContent = 'Generating…';
-              newsStatus.textContent =
-                'AI is generating a preliminary draft. Please wait.';
+  try {
+    await navigator.clipboard.writeText(prompt);
+    newsStatus.textContent =
+      'Research request copied! Open ChatGPT and paste it using Command + V.';
+  } catch (error) {
+    newsStatus.textContent =
+      'ChatGPT opened, but automatic copying was blocked. ' +
+      'Please allow clipboard access and try again.';
+  }
+});
 
-              try {
-                const { data: authData, error: authError } =
-                  await supabase.auth.getSession();
-
-                if (authError || !authData.session) {
-                  throw new Error(
-                    'Your login session expired. Please sign in again.'
-                  );
-                }
-
-                const { data: result, error } =
-                  await supabase.functions.invoke('draft-article', {
-                    body: { story_id: story.id }
-                  });
-
-                if (error) {
-                  let detail = error.message;
-
-                  if (error.context instanceof Response) {
-                    const body = await error.context
-                      .json()
-                      .catch(() => null);
-
-                    if (body?.error) {
-                      detail = body.error +
-                        (body.upstream_status
-                          ? ` (HTTP ${body.upstream_status})`
-                          : '');
-                    }
-                  }
-
-                  throw new Error(detail);
-                }
-
-                if (!result?.success || !result.article?.id) {
-                  throw new Error(
-                    result?.error || 'Draft generation did not complete.'
-                  );
-                }
-
-                // Reload the existing article list.
-                await loadArticles(false);
-
-                // Open the newly created draft in the editor.
-                const { data: article, error: articleError } =
-                  await supabase
-                    .from('articles')
-                    .select('*')
-                    .eq('id', result.article.id)
-                    .single();
-
-                if (articleError || !article) {
-                  throw new Error(
-                    'Draft saved, but the editor could not load it.'
-                  );
-                }
-
-                await choose(article);
-
-                newsStatus.textContent =
-                  'AI draft created successfully. ' +
-                  'Review and verify all claims before approving.';
-
-                message(
-                  'AI draft saved. It has NOT been published.'
-                );
-
-                $('article-form').scrollIntoView({
-                  behavior: 'smooth',
-                  block: 'start'
-                });
-
-              } catch (error) {
-                console.error('AI drafting error:', error);
-
-                newsStatus.textContent =
-                  'Draft generation failed: ' + error.message;
-
-                message(
-                  'AI drafting failed: ' + error.message
-                );
-              } finally {
-                draftButton.disabled = false;
-                draftButton.textContent = 'Generate AI Draft';
-              }
-            });
 
             item.append(
               headline,

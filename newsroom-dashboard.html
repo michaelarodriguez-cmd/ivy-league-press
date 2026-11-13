@@ -1,1 +1,29 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Editorial Dashboard | Ivy League Press</title><link rel="stylesheet" href="newsroom.css"></head><body><header class="topbar"><div><span class="eyebrow">IVY LEAGUE PRESS</span><h1>Editorial Dashboard</h1></div><button id="sign-out" class="secondary">Sign out</button></header><main class="dashboard" id="dashboard" hidden><p id="message" role="status" aria-live="polite"></p><div class="columns"><section class="panel"><h2>Article queue</h2><button id="new-article" class="secondary">+ New draft</button><div id="article-list" class="article-list"></div></section><section class="panel"><h2 id="editor-title">Draft editor</h2><form id="article-form"><input id="article-id" type="hidden"><label>Headline<input id="title" required maxlength="250"></label><label>URL slug<input id="slug" required pattern="[a-z0-9]+(?:-[a-z0-9]+)*" title="Lowercase letters, numbers, and hyphens"></label><label>Category<select id="category"><option>Investigations</option><option>Politics</option><option>Government</option><option>World News</option></select></label><label>Summary<textarea id="excerpt" rows="3"></textarea></label><label>Article body<textarea id="body" rows="12" required></textarea></label><label>Byline<input id="author" value="Ivy League Press"></label><div class="actions"><button type="submit">Save draft</button><button type="button" id="approve" class="secondary">Approve</button><button type="button" id="publish" class="danger">Publish approved</button></div></form><p class="fineprint">Verify all claims and source links before approval. Publishing makes an article publicly readable through Supabase; the public website will be connected in the next phase.</p><h3>Sources</h3><p class="fineprint">Source URLs are stored with each article. Save the article before adding sources.</p><form id="source-form"><label>Source name<input id="source-name" required></label><label>Source URL<input id="source-url" type="url" required></label><button type="submit" class="secondary">Add source</button></form><ul id="source-list"></ul></section></div></main><section class="panel gate" id="loading">Checking editor access…</section><script type="module" src="newsroom.js"></script></body></html>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Editorial Dashboard | Ivy League Press</title><link rel="stylesheet" href="newsroom.css"></head><body><header class="topbar"><div><span class="eyebrow">IVY LEAGUE PRESS</span><h1>Editorial Dashboard</h1></div><button id="sign-out" class="secondary">Sign out</button></header><main class="dashboard" id="dashboard" hidden><p id="message" role="status" aria-live="polite"></p><div class="columns"><section class="panel"><h2>Article queue</h2><button id="new-article" class="secondary">+ New draft</button><div id="article-list" class="article-list"></div></section><section class="panel">
+<h2 id="editor-title">Draft editor</h2>
+
+<div class="ai-import">
+  <h3>Import AI Article</h3>
+  <p class="fineprint">
+    Paste your completed ChatGPT editorial package below.
+    Review all information before saving.
+  </p>
+
+  <textarea
+    id="ai-import-text"
+    rows="8"
+    placeholder="Paste the complete ChatGPT article here..."
+  ></textarea>
+
+  <button
+    type="button"
+    id="ai-import-button"
+    class="secondary"
+  >
+    Fill article fields
+  </button>
+
+  <p id="ai-import-status" role="status"></p>
+</div>
+
+<form id="article-form">
+<input id="article-id" type="hidden"><label>Headline<input id="title" required maxlength="250"></label><label>URL slug<input id="slug" required pattern="[a-z0-9]+(?:-[a-z0-9]+)*" title="Lowercase letters, numbers, and hyphens"></label><label>Category<select id="category"><option>Investigations</option><option>Politics</option><option>Government</option><option>World News</option></select></label><label>Summary<textarea id="excerpt" rows="3"></textarea></label><label>Article body<textarea id="body" rows="12" required></textarea></label><label>Byline<input id="author" value="Ivy League Press"></label><div class="actions"><button type="submit">Save draft</button><button type="button" id="approve" class="secondary">Approve</button><button type="button" id="publish" class="danger">Publish approved</button></div></form><p class="fineprint">Verify all claims and source links before approval. Publishing makes an article publicly readable through Supabase; the public website will be connected in the next phase.</p><h3>Sources</h3><p class="fineprint">Source URLs are stored with each article. Save the article before adding sources.</p><form id="source-form"><label>Source name<input id="source-name" required></label><label>Source URL<input id="source-url" type="url" required></label><button type="submit" class="secondary">Add source</button></form><ul id="source-list"></ul></section></div></main><section class="panel gate" id="loading">Checking editor access…</section><script type="module" src="newsroom.js"></script></body></html>

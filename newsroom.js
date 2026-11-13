@@ -206,6 +206,16 @@ if (SUPABASE_URL.includes('PASTE_') || SUPABASE_PUBLISHABLE_KEY.includes('PASTE_
   <option value="Federal Reserve Press Releases">Federal Reserve</option>
 </select>
 
+<label for="headline-search" style="display:inline-block; margin-right:8px;">
+  Search:
+</label>
+<input
+  type="search"
+  id="headline-search"
+  placeholder="Search headlines..."
+  style="padding:8px; margin-right:12px; border:1px solid #ccc; border-radius:6px; width:220px;"
+>
+
           <button type="button" id="refresh-news">
             Refresh headlines
           </button>
@@ -220,6 +230,7 @@ if (SUPABASE_URL.includes('PASTE_') || SUPABASE_PUBLISHABLE_KEY.includes('PASTE_
         const newsList = $('monitored-news-list');
         const refreshNewsButton = $('refresh-news');
 const publisherFilter = $('publisher-filter');
+        const headlineSearch = $('headline-search');
         async function loadMonitoredNews() {
           newsStatus.textContent = 'Loading monitored news…';
           refreshNewsButton.disabled = true;
@@ -231,6 +242,12 @@ let query = supabase
 
 if (publisherFilter.value) {
   query = query.eq('source_name', publisherFilter.value);
+}
+
+const searchTerm = headlineSearch.value.trim();
+
+if (searchTerm) {
+  query = query.ilike('headline', `%${searchTerm}%`);
 }
 
 const { data, error } = await query
@@ -345,6 +362,10 @@ draftButton.addEventListener('click', async () => {
         );
 
 publisherFilter.addEventListener('change', () => {
+  loadMonitoredNews();
+});
+
+headlineSearch.addEventListener('input', () => {
   loadMonitoredNews();
 });
 

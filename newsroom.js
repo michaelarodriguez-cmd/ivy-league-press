@@ -173,6 +173,217 @@ if (SUPABASE_URL.includes('PASTE_') || SUPABASE_PUBLISHABLE_KEY.includes('PASTE_
           await supabase.auth.signOut();
           location.replace(loginURL);
         });
+        
+        // IVY LEAGUE PRESS — MONITORED NEWS & AI DRAFTING
+
+        const newsPanel = document.createElement('section');
+        newsPanel.id = 'monitored-news-panel';
+        newsPanel.style.cssText = `
+          margin: 24px 0;
+          padding: 20px;
+          border: 1px solid #d1d5db;
+          border-radius: 12px;
+        `;
+
+        newsPanel.innerHTML = `
+          <h2>Monitored News</h2>
+          <p>
+            Headlines collected from your news sources.
+            Generate a preliminary AI draft for editorial review.
+          </p>
+          <button type="button" id="refresh-news">
+            Refresh headlines
+          </button>
+          <p id="news-status" role="status"></p>
+          <div id="monitored-news-list"></div>
+        `;
+
+        // Place the news panel inside the existing dashboard.
+        $('dashboard').prepend(newsPanel);
+
+        const newsStatus = $('news-status');
+        const newsList = $('monitored-news-list');
+        const refreshNewsButton = $('refresh-news');
+
+        async function loadMonitoredNews() {
+          newsStatus.textContent = 'Loading monitored news…';
+          refreshNewsButton.disabled = true;
+
+          const { data, error } = await supabase
+            .from('news_stories')
+            .select('id,headline,source_name,source_url,category,discovered_at')
+            .order('discovered_at', { ascending: false })
+            .limit(30);
+
+          refreshNewsButton.disabled = false;
+
+          if (error) {
+            newsStatus.textContent =
+              'Unable to load headlines: ' + error.message;
+            return;
+          }
+
+          newsList.replaceChildren();
+
+          if (!data?.length) {
+            newsStatus.textContent =
+              'No monitored headlines available yet.';
+            return;
+          }
+
+          newsStatus.textContent =
+            `${data.length} recent headlines loaded.`;
+
+          for (const story of data) {
+            const item = document.createElement('div');
+            item.style.cssText = `
+              padding: 14px 0;
+              border-bottom: 1px solid #d1d5db;
+            `;
+
+            const headline = document.createElement('strong');
+            headline.textContent = story.headline;
+            headline.style.display = 'block';
+
+            const details = document.createElement('p');
+            details.textContent =
+              `${story.source_name} · ${story.category || 'News'}`;
+            details.style.margin = '6px 0';
+
+            const sourceLink = document.createElement('a');
+            sourceLink.href = story.source_url;
+            sourceLink.target = '_blank';
+            sourceLink.rel = 'noopener noreferrer';
+            sourceLink.textContent = 'Read original source';
+            sourceLink.style.display = 'inline-block';
+            sourceLink.style.marginRight = '14px';
+
+            const draftButton = document.createElement('button');
+            draftButton.type = 'button';
+            draftButton.textContent = 'Generate AI Draft';
+
+            draftButton.addEventListener('click', async () => {
+              const confirmed = confirm(
+                `Generate a preliminary AI draft for:\n\n` +
+                `${story.headline}\n\n` +
+                `This uses the OpenAI API and may incur charges. ` +
+                `The draft will require fact-checking before approval.`
+              );
+
+              if (!confirmed) return;
+
+              draftButton.disabled = true;
+              draftButton.textContent = 'Generating…';
+              newsStatus.textContent =
+                'AI is generating a preliminary draft. Please wait.';
+
+              try {
+                const { data: authData, error: authError } =
+                  await supabase.auth.getSession();
+
+                if (authError || !authData.session) {
+                  throw new Error(
+                    'Your login session expired. Please sign in again.'
+                  );
+                }
+
+                const { data: result, error } =
+                  await supabase.functions.invoke('draft-article', {
+                    body: { story_id: story.id }
+                  });
+
+                if (error) {
+                  let detail = error.message;
+
+                  if (error.context instanceof Response) {
+                    const body = await error.context
+                      .json()
+                      .catch(() => null);
+
+                    if (body?.error) {
+                      detail = body.error +
+                        (body.upstream_status
+                          ? ` (HTTP ${body.upstream_status})`
+                          : '');
+                    }
+                  }
+
+                  throw new Error(detail);
+                }
+
+                if (!result?.success || !result.article?.id) {
+                  throw new Error(
+                    result?.error || 'Draft generation did not complete.'
+                  );
+                }
+
+                // Reload the existing article list.
+                await loadArticles(false);
+
+                // Open the newly created draft in the editor.
+                const { data: article, error: articleError } =
+                  await supabase
+                    .from('articles')
+                    .select('*')
+                    .eq('id', result.article.id)
+                    .single();
+
+                if (articleError || !article) {
+                  throw new Error(
+                    'Draft saved, but the editor could not load it.'
+                  );
+                }
+
+                await choose(article);
+
+                newsStatus.textContent =
+                  'AI draft created successfully. ' +
+                  'Review and verify all claims before approving.';
+
+                message(
+                  'AI draft saved. It has NOT been published.'
+                );
+
+                $('article-form').scrollIntoView({
+                  behavior: 'smooth',
+                  block: 'start'
+                });
+
+              } catch (error) {
+                console.error('AI drafting error:', error);
+
+                newsStatus.textContent =
+                  'Draft generation failed: ' + error.message;
+
+                message(
+                  'AI drafting failed: ' + error.message
+                );
+              } finally {
+                draftButton.disabled = false;
+                draftButton.textContent = 'Generate AI Draft';
+              }
+            });
+
+            item.append(
+              headline,
+              details,
+              sourceLink,
+              draftButton
+            );
+
+            newsList.appendChild(item);
+          }
+        }
+
+        refreshNewsButton.addEventListener(
+          'click',
+          loadMonitoredNews
+        );
+
+        await loadMonitoredNews();
+
+        // END MONITORED NEWS SECTION
+
         await choose(null);
         await loadArticles(false);
       }

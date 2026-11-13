@@ -220,7 +220,7 @@ if (SUPABASE_URL.includes('PASTE_') || SUPABASE_PUBLISHABLE_KEY.includes('PASTE_
         const newsList = $('monitored-news-list');
         const refreshNewsButton = $('refresh-news');
 const publisherFilter = $('publisher-filter');
-        id="refresh-news" {
+        async function loadMonitoredNews() {
           newsStatus.textContent = 'Loading monitored news…';
           refreshNewsButton.disabled = true;
 

@@ -71,7 +71,149 @@ if (SUPABASE_URL.includes('PASTE_') || SUPABASE_PUBLISHABLE_KEY.includes('PASTE_
         const snapshot = () => JSON.stringify(fields.map(id => $(id).value));
         const escapeHTML = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
         const collect = () => Object.fromEntries(fields.map(id => [id, $(id).value.trim()]));
-        const ensureSaved = () => {
+        
+  // Import a ChatGPT editorial package into the draft editor.
+  $('ai-import-button').addEventListener('click', () => {
+    const raw = $('ai-import-text').value.trim();
+    const status = $('ai-import-status');
+
+    if (!raw) {
+      status.textContent = 'Paste an article first.';
+      return;
+    }
+
+    // Do not overwrite an existing selected article.
+    if (selected) {
+      status.textContent =
+        'Click + New draft before importing an article.';
+      return;
+    }
+
+    const headings = [
+      'Headline',
+      'Slug',
+      'Category',
+      'Short Summary',
+      'Article Body',
+      'Sources (publisher name and exact URL)',
+      'Verification Notes',
+      'Editorial Fact-Checking Checklist'
+    ];
+
+    const sections = {};
+    let active = null;
+
+    for (const line of raw.split(/\r?\n/)) {
+      const cleaned = line.trim()
+        .replace(/^#{1,6}\s*/, '')
+        .replace(/^\*\*(.*?)\*\*$/, '$1');
+
+      const match = cleaned.match(/^(\d+)\.\s*(.+?)\s*:?\s*$/);
+      const heading = match ? match[2].replace(/:$/, '') : cleaned.replace(/:$/, '');
+
+      const found = headings.find(
+        h => h.toLowerCase() === heading.toLowerCase()
+      );
+
+      if (found) {
+        active = found;
+        sections[active] = [];
+      } else if (active) {
+        sections[active].push(line);
+      }
+    }
+
+    const get = name =>
+      (sections[name] || []).join('\n').trim();
+
+    if (!get('Headline') || !get('Article Body')) {
+      status.textContent =
+        'Could not find Headline and Article Body. Check the article format.';
+      return;
+    }
+
+    $('title').value = get('Headline')
+      .replace(/^\*\*|\*\*$/g, '');
+
+    const slug = get('Slug') || $('title').value;
+    $('slug').value = slug.toLowerCase()
+      .normalize('NFKD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '');
+
+    const category = get('Category');
+    const categoryOptions = Array.from($('category').options);
+    const matchingCategory = categoryOptions.find(
+      option => option.value.toLowerCase() === category.toLowerCase()
+    );
+
+    if (matchingCategory) {
+      $('category').value = matchingCategory.value;
+    }
+
+    $('excerpt').value = get('Short Summary');
+
+    const verification = get('Verification Notes');
+    const checklist = get('Editorial Fact-Checking Checklist');
+
+    $('body').value = [
+      get('Article Body'),
+      '',
+      'EDITORIAL DRAFT — NOT FACT-CHECKED',
+      verification ? '\nVerification notes:\n' + verification : '',
+      checklist ? '\nEditorial checklist:\n' + checklist : ''
+    ].filter(Boolean).join('\n');
+
+    $('author').value = 'Ivy League Press';
+
+    // Prepare source details for editorial review.
+    const sources = get('Sources (publisher name and exact URL)');
+    if (sources) {
+      const firstUrl = sources.match(/https?:\/\/[^\s<>)\]]+/);
+      
+if (firstUrl) {
+  $('source-url').value = firstUrl[0].replace(/[.,;]+$/, '');
+
+  const sourceLine = sources.split('\n').find(
+    line => line.includes(firstUrl[0])
+  ) || '';
+
+  const sourceName = sourceLine
+    .split(/https?:\/\//)[0]
+    .replace(/^[-*\d.)\s]+/, '')
+    .replace(/[:(\[\s-]+$/, '')
+    .replace(/\*\*/g, '')
+    .trim();
+
+  $('source-name').value = sourceName;
+}
+
+    }
+
+    
+    status.textContent =
+      'Article fields filled. Review everything before saving. ' +
+      'After saving, add each verified source individually.';
+
+    if (sources) {
+      const sourcePreview = document.createElement('pre');
+      sourcePreview.style.cssText =
+        'white-space:pre-wrap;overflow-wrap:anywhere;' +
+        'font-size:12px;margin-top:12px;';
+      sourcePreview.textContent = sources;
+
+      status.replaceChildren(
+        document.createTextNode(
+          'Article fields filled. Review before saving. ' +
+          'Add each verified source after saving.'
+        ),
+        sourcePreview
+      );
+    }
+
+  });
+const ensureSaved = () => {
           if (!selected) { message('Save the draft first.'); return false; }
           if (snapshot() !== savedSnapshot) { message('Save your changes before approving or publishing.'); return false; }
           return true;

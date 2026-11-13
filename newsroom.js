@@ -191,6 +191,21 @@ if (SUPABASE_URL.includes('PASTE_') || SUPABASE_PUBLISHABLE_KEY.includes('PASTE_
             Headlines collected from your news sources.
             Generate a preliminary AI draft for editorial review.
           </p>
+          
+<label for="publisher-filter" style="display:inline-block; margin-right:8px;">
+  Publisher:
+</label>
+<select id="publisher-filter" style="padding:8px; margin-right:12px; border-radius:6px;">
+  <option value="">All Sources</option>
+  <option value="CNN Top Stories">CNN</option>
+  <option value="Fox News Latest">Fox News</option>
+  <option value="White House Releases">White House</option>
+  <option value="NASA News Releases">NASA</option>
+  <option value="CDC Travel Health Notices">CDC</option>
+  <option value="Congress.gov Most-Viewed Bills">Congress.gov</option>
+  <option value="Federal Reserve Press Releases">Federal Reserve</option>
+</select>
+
           <button type="button" id="refresh-news">
             Refresh headlines
           </button>
@@ -204,16 +219,24 @@ if (SUPABASE_URL.includes('PASTE_') || SUPABASE_PUBLISHABLE_KEY.includes('PASTE_
         const newsStatus = $('news-status');
         const newsList = $('monitored-news-list');
         const refreshNewsButton = $('refresh-news');
-
-        async function loadMonitoredNews() {
+const publisherFilter = $('publisher-filter');
+        id="refresh-news" {
           newsStatus.textContent = 'Loading monitored news…';
           refreshNewsButton.disabled = true;
 
-          const { data, error } = await supabase
-            .from('news_stories')
-            .select('id,headline,source_name,source_url,category,discovered_at')
-            .order('discovered_at', { ascending: false })
-            .limit(30);
+          
+let query = supabase
+  .from('news_stories')
+  .select('id,headline,source_name,source_url,category,discovered_at');
+
+if (publisherFilter.value) {
+  query = query.eq('source_name', publisherFilter.value);
+}
+
+const { data, error } = await query
+  .order('discovered_at', { ascending: false })
+  .limit(30);
+
 
           refreshNewsButton.disabled = false;
 
@@ -320,6 +343,10 @@ draftButton.addEventListener('click', async () => {
           'click',
           loadMonitoredNews
         );
+
+publisherFilter.addEventListener('change', () => {
+  loadMonitoredNews();
+});
 
         await loadMonitoredNews();
 
